@@ -1,11 +1,15 @@
 import os
 from PyQt5.QtWidgets import (QWidget, QGridLayout, QPushButton, QFileDialog,
-                             QVBoxLayout, QHBoxLayout, QSlider, QLabel, QDial)
+                             QVBoxLayout, QHBoxLayout, QSlider, QLabel, QDial,
+                             QMessageBox, QMenu)
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 import pyqtgraph as pg
 import librosa
 import numpy as np
+
+# Add this import at the top of your file
+from file_dialog_utils import FileDialogUtils
 
 class SampleButton(QPushButton):
     def __init__(self, sample_path=None, parent=None):
@@ -96,13 +100,104 @@ class SamplePadWindow(QWidget):
                 self.grid_layout.addWidget(button, row, col)
                 self.buttons.append(button)
 
+        # Add context menus to buttons
+        self.add_context_menu_to_buttons()
+
     def load_samples_from_folder(self):
-        folder = QFileDialog.getExistingDirectory(self, "Select Sample Folder")
+        """
+        Load samples from a user-selected folder
+        Uses improved file dialog that properly filters audio files
+        """
+        folder = FileDialogUtils.get_directory(self, "Select Sample Folder")
+
         if folder:
-            samples = [f for f in os.listdir(folder) if f.lower().endswith(('.wav', '.mp3'))]
+            # List all audio files in the folder
+            audio_extensions = ('.wav', '.mp3', '.ogg', '.flac', '.aiff')
+            samples = []
+
+            for file in os.listdir(folder):
+                if file.lower().endswith(audio_extensions):
+                    samples.append(file)
+
+            # Sort the samples alphabetically
+            samples.sort()
+
+            # Display a message if no samples were found
+            if not samples:
+                QMessageBox.information(
+                    self,
+                    "No Samples Found",
+                    f"No audio files were found in the selected folder.\n"
+                    f"Supported formats: {', '.join(audio_extensions)}"
+                )
+                return
+
+            # Load samples into buttons
             for i, sample in enumerate(samples):
                 if i < len(self.buttons):
-                    self.buttons[i].set_sample(os.path.join(folder, sample))
+                    sample_path = os.path.join(folder, sample)
+                    try:
+                        self.buttons[i].set_sample(sample_path)
+                        print(f"Loaded sample: {sample_path}")
+                    except Exception as e:
+                        print(f"Error loading sample {sample_path}: {e}")
+
+    # Add this method to allow loading individual samples
+    def load_individual_sample(self, button_index):
+        """
+        Load a single sample for a specific button
+        """
+        if button_index >= len(self.buttons):
+            return
+
+        file_path, _ = FileDialogUtils.get_audio_file(
+            self,
+            title=f"Select Sample for Pad {button_index+1}"
+        )
+
+        if file_path:
+            try:
+                self.buttons[button_index].set_sample(file_path)
+                print(f"Loaded sample: {file_path} for pad {button_index+1}")
+            except Exception as e:
+                print(f"Error loading sample {file_path}: {e}")
+                QMessageBox.critical(
+                    self,
+                    "Error Loading Sample",
+                    f"Could not load the audio file.\nError: {str(e)}"
+                )
+
+    # Add a method to handle right-click events on sample buttons
+    def add_context_menu_to_buttons(self):
+        """
+        Add context menu to sample buttons
+        """
+        for i, button in enumerate(self.buttons):
+            button.setContextMenuPolicy(Qt.CustomContextMenu)
+            button.customContextMenuRequested.connect(
+                lambda pos, idx=i: self.show_button_context_menu(pos, idx)
+            )
+
+    def show_button_context_menu(self, pos, button_index):
+        """
+        Show context menu for a sample button
+        """
+        context_menu = QMenu(self)
+
+        # Add actions
+        load_action = context_menu.addAction("Load Sample")
+        clear_action = context_menu.addAction("Clear Sample")
+
+        # Show the menu and get the selected action
+        action = context_menu.exec_(self.buttons[button_index].mapToGlobal(pos))
+
+        # Handle the action
+        if action == load_action:
+            self.load_individual_sample(button_index)
+        elif action == clear_action:
+            self.buttons[button_index].set_sample(None)
+            print(f"Cleared sample for pad {button_index+1}")
+
 
     def set_master_volume(self, volume):
         for button in self.buttons:

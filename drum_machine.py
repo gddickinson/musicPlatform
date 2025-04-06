@@ -4,6 +4,9 @@ import numpy as np
 import pygame
 import os
 
+# Add this import at the top of your file
+from file_dialog_utils import FileDialogUtils
+
 class DrumMachineGUI(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -135,16 +138,76 @@ class DrumMachineGUI(QtWidgets.QMainWindow):
         button = self.sender()
         button.setStyleSheet(self.get_button_style(button.isChecked()))
 
+
+
     def load_samples(self):
+        """Load all samples from the samples folder"""
         samples = {}
         sample_folder = "samples"  # Make sure this folder exists and contains your sample files
+
+        # Try to create the samples folder if it doesn't exist
+        if not os.path.exists(sample_folder):
+            try:
+                os.makedirs(sample_folder)
+                print(f"Created samples folder: {sample_folder}")
+            except Exception as e:
+                print(f"Error creating samples folder: {e}")
+
+        # Load samples for each row
         for i in range(self.rows):
             sample_path = os.path.join(sample_folder, f"sample{i}.wav")
-            if os.path.exists(sample_path):
-                samples[i] = pygame.mixer.Sound(sample_path)
-            else:
-                print(f"Warning: Sample file {sample_path} not found.")
+            try:
+                if os.path.exists(sample_path):
+                    samples[i] = pygame.mixer.Sound(sample_path)
+                    print(f"Loaded sample: {sample_path}")
+                else:
+                    # Try to find any .wav file with the prefix sample{i}
+                    found = False
+                    for file in os.listdir(sample_folder):
+                        if file.startswith(f"sample{i}") and file.endswith((".wav", ".mp3", ".ogg")):
+                            sample_path = os.path.join(sample_folder, file)
+                            samples[i] = pygame.mixer.Sound(sample_path)
+                            print(f"Loaded sample: {sample_path}")
+                            found = True
+                            break
+
+                    if not found:
+                        print(f"Warning: Sample file {sample_path} not found.")
+            except Exception as e:
+                print(f"Error loading sample {sample_path}: {e}")
+
         return samples
+
+    def load_sample(self, track):
+        """Load a new sample for a track by selecting a file"""
+        # Use our utility function
+        file_path, _ = FileDialogUtils.get_audio_file(
+            self,
+            title=f"Load Sample for Track {track+1} ({self.sample_names[track]})"
+        )
+
+        if file_path:
+            try:
+                # Load the sample using pygame mixer
+                self.samples[track] = pygame.mixer.Sound(file_path)
+
+                # Update the sample name (use just the filename, not the full path)
+                self.sample_names[track] = os.path.basename(file_path)
+
+                # Update the label
+                label_item = self.grid_layout.itemAtPosition(track, 0)
+                if label_item and label_item.widget():
+                    label_item.widget().setText(self.sample_names[track])
+
+                print(f"Loaded sample: {file_path} for track {track}")
+            except Exception as e:
+                print(f"Error loading sample: {e}")
+                # Show error message to the user
+                QtWidgets.QMessageBox.critical(
+                    self,
+                    "Error Loading Sample",
+                    f"Could not load the audio file.\nError: {str(e)}"
+                )
 
     def toggle_playback(self):
         if self.playing:
