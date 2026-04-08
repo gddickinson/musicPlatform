@@ -1,0 +1,8 @@
+PyQt5==5.15.11
+numpy==1.26.4
+pyaudio==0.2.14
+pygame==2.6.1
+scipy==1.14.1
+pyqtgraph==0.13.7
+QDarkStyle==3.2.3
+soundfile==0.12.1
