@@ -108,3 +108,7 @@ The application opens a tabbed window with sections for each instrument, the mix
 ## GUI Framework
 
 Built with **PyQt5** and styled with **QDarkStyle** for a dark production-oriented interface.
+
+
+---
+*Built with AI assistance from [Claude (Anthropic)](https://claude.com/).*
