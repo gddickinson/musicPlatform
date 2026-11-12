@@ -34,6 +34,11 @@ except ImportError:
                 return PyoEmulator()
             return dummy
 
+        # signal arithmetic (synth + harmonics, filter * env, ...) gives another silent placeholder
+        def _op(self, other):
+            return PyoEmulator()
+        __add__ = __radd__ = __mul__ = __rmul__ = __sub__ = _op
+
     # Create mock classes
     Server = PyoEmulator
     Sine = PyoEmulator
@@ -46,6 +51,7 @@ except ImportError:
     Delay = PyoEmulator
     Chorus = PyoEmulator
     Disto = PyoEmulator
+    Biquad = PyoEmulator
 
 # Import the logger
 from logger import get_logger

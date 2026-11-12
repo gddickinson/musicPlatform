@@ -56,7 +56,7 @@ musicPlatform/
 ├── wav/                     # WAV file storage
 ├── projects/                # Saved project files
 ├── logs/                    # Application logs
-└── unit tests/              # Test suite
+└── tests/                   # Test suite (pytest)
 ```
 
 ## Requirements
@@ -72,10 +72,12 @@ musicPlatform/
 - soundfile (for audio export)
 
 Optional:
+- pyo (piano keyboard sound: without it the piano keys respond but stay silent)
+- mido (MIDI export; listed in requirements.txt)
 - librosa (advanced audio analysis)
 - matplotlib (visualization)
 - pydub (additional export formats)
-- rtmidi / mido (MIDI hardware)
+- python-rtmidi (MIDI hardware, with mido)
 
 ## Installation
 
