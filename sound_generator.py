@@ -8,7 +8,8 @@ import pyqtgraph as pg
 
 from synth_dsp import (  # noqa: F401  (re-exported: the DSP classes used to live here)
     Track, WaveTrack, NoiseTrack, FMSynthTrack, ContinuousNoteTrack, Effect, ReverbEffect, DistortionEffect,
-    EQEffect, VibratoEffect, TremoloEffect, ChorusEffect, LowPassFilter, EFFECT_PARAMS)
+    EQEffect, VibratoEffect, TremoloEffect, ChorusEffect, LowPassFilter, EFFECT_PARAMS, automation_step,
+    DIAL_RANGES, AUTOMATION_RATE_RANGE)
 
 class AutomatedDial(QDial):
     manualValueChanged = pyqtSignal(int)
@@ -28,14 +29,7 @@ class AutomatedDial(QDial):
 
     def update_automated_value(self):
         if self.automation_active:
-            value_range = self.maximum() - self.minimum()
-            change = int(self.automation_rate * 0.05)
-            new_value = self.value() + change
-
-            if new_value > self.maximum():
-                new_value = self.minimum() + (new_value - self.maximum() - 1) % value_range
-            elif new_value < self.minimum():
-                new_value = self.maximum() - (self.minimum() - new_value - 1) % value_range
+            new_value = automation_step(self.value(), self.automation_rate, self.minimum(), self.maximum())
 
             super().setValue(new_value)
             self.automatedValueChanged.emit(new_value)
@@ -317,7 +311,7 @@ class TrackControls(QGroupBox):
         self.remove_callback(self.track, self)
 
     def add_wave_track_controls(self, layout):
-        freq_widget, freq_dial = self.create_automated_dial(20, 2000, int(self.track.frequency), "Frequency")
+        freq_widget, freq_dial = self.create_automated_dial(*DIAL_RANGES['frequency'], int(self.track.frequency), "Frequency")
         freq_dial.valueChanged.connect(self.track.set_frequency)
         layout.addWidget(freq_widget, layout.rowCount(), 0, 1, 2)
 
@@ -337,15 +331,15 @@ class TrackControls(QGroupBox):
         layout.addWidget(noise_type_combo, layout.rowCount() - 1, 1)
 
     def add_fm_synth_track_controls(self, layout):
-        carrier_widget, carrier_dial = self.create_automated_dial(20, 2000, int(self.track.carrier_freq), "Carrier Freq")
+        carrier_widget, carrier_dial = self.create_automated_dial(*DIAL_RANGES['carrier_freq'], int(self.track.carrier_freq), "Carrier Freq")
         carrier_dial.valueChanged.connect(self.track.set_carrier_frequency)
         layout.addWidget(carrier_widget, layout.rowCount(), 0, 1, 2)
 
-        mod_widget, mod_dial = self.create_automated_dial(1, 1000, int(self.track.mod_freq), "Mod Freq")
+        mod_widget, mod_dial = self.create_automated_dial(*DIAL_RANGES['mod_freq'], int(self.track.mod_freq), "Mod Freq")
         mod_dial.valueChanged.connect(self.track.set_mod_frequency)
         layout.addWidget(mod_widget, layout.rowCount(), 0, 1, 2)
 
-        index_widget, index_dial = self.create_automated_dial(0, 10, int(self.track.mod_index), "Mod Index")
+        index_widget, index_dial = self.create_automated_dial(*DIAL_RANGES['mod_index'], int(self.track.mod_index), "Mod Index")
         index_dial.valueChanged.connect(self.track.set_mod_index)
         layout.addWidget(index_widget, layout.rowCount(), 0, 1, 2)
 
@@ -391,7 +385,7 @@ class TrackControls(QGroupBox):
         dial_layout.addWidget(dial_label, 1, 0, 1, 2)
 
         rate_slider = QSlider(Qt.Horizontal)
-        rate_slider.setRange(-1000, 1000)
+        rate_slider.setRange(*AUTOMATION_RATE_RANGE)
         rate_slider.setValue(0)
         rate_slider.valueChanged.connect(dial.set_automation)
         dial_layout.addWidget(QLabel("Automation Rate:"), 2, 0)

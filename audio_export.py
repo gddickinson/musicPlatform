@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QComboBox,
 
 # Import the logger
 from logger import get_logger
+from wav_export import normalize_buffer
 
 # Set up module logger
 logger = get_logger(__name__)
@@ -304,10 +305,8 @@ class AudioExporter(QObject):
 
             # Normalize if requested
             if options.normalize:
-                max_val = np.max(np.abs(buffer))
-                if max_val > 0:
-                    buffer = buffer / max_val * 0.95  # Scale to 95% to avoid clipping
-                    logger.debug("Normalized audio buffer")
+                buffer = normalize_buffer(buffer)  # peak at 95% to avoid clipping
+                logger.debug("Normalized audio buffer")
 
             # Convert bit depth
             if options.bit_depth == 16:

@@ -32,6 +32,12 @@ A digital audio workstation (DAW) built with Python and PyQt5. The platform inte
 
 ```
 musicPlatform/
+├── synth_dsp.py             # Qt-free sound generator DSP (tracks, effects)
+├── drum_engine.py           # Qt-free drum timing, render, MIDI tracks, presets
+├── drum_kit.py              # Synthesised drum kit (web)
+├── midi_export.py / wav_export.py  # Qt-free MIDI and WAV writers
+├── piano_spec.py            # Piano sliders, key map, note frequencies
+├── web/                     # Web app (FastAPI) and browser front end
 ├── main.py                  # Entry point (dependency check, environment setup)
 ├── enhanced_main_gui.py     # Main tabbed window (EnhancedMainGUI)
 ├── piano_keyboard.py        # Piano keyboard instrument
@@ -106,6 +112,45 @@ Or use the shell script:
 ```
 
 The application opens a tabbed window with sections for each instrument, the mixer, project manager, preset manager, and integration panel. Switch between tools using the tab bar at the top.
+
+## Web version
+
+**Live site:** https://gddickinson.github.io/musicPlatform/ (static, runs entirely in the browser)
+
+The site is a working browser version of the instruments:
+
+- **Drum machine**: the 12 x 32 step sequencer with the desktop's step clock (`60000 // BPM // 4` ms), row volumes,
+  playback, your own samples per row, DrumPreset files, and WAV / General MIDI export.
+- **Sound generator**: wave, noise, FM and held-note tracks, automated dials, the effects rack (distortion, EQ,
+  vibrato, tremolo, chorus, low-pass), a scope, SoundGeneratorPreset files and WAV export, running in an AudioWorklet
+  in 1024-sample blocks.
+- **Piano keyboard**: three octaves with the desktop's key map, sliders, ranges and defaults (the pyo sound chain is
+  approximated with WebAudio nodes).
+- **Verify**: the browser recomputes Python reference results.
+
+The drum and sound-generator logic is ported line for line from the Qt-free modules `drum_engine.py`,
+`synth_dsp.py`, `midi_export.py` and `wav_export.py`; node tests (`web/static/*.test.mjs`) check sample buffers to
+1e-9 and WAV/MIDI files byte for byte against `tests/fixtures/` (regenerate with `python scripts/make_fixtures.py`).
+The drum rows play a synthesised kit (`drum_kit.py`), because the WAV files in `samples/` and `wav/` have no stated
+source or licence. The sound generator's Reverb is not on the web (see ROADMAP / SESSION_LOG: its formula needs a
+decision). The sample pad, recording studio, mixer, routing, project manager and MIDI controller are desktop only.
+
+### Run the web app
+
+```bash
+pip install -r requirements-web.txt
+python run_web.py            # http://127.0.0.1:8167
+```
+
+The local app also offers "Check against the Python" on the drum page (re-renders the pattern in Python and
+compares the WAV and MIDI bytes). Tests: `python -m pytest -q tests` and `node web/static/synth_engine.test.mjs`,
+`node web/static/drum_engine.test.mjs`. Static build: `python scripts/build_static.py` (published by
+`.github/workflows/pages.yml` on push to main).
+
+| Drum machine | Sound generator |
+|---|---|
+| ![Drum machine](docs/img/drums.png) | ![Sound generator](docs/img/synth.png) |
+| ![Piano keyboard](docs/img/piano.png) | ![Verify](docs/img/verify.png) |
 
 ## GUI Framework
 

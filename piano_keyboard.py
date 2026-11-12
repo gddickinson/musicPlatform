@@ -55,6 +55,7 @@ except ImportError:
 
 # Import the logger
 from logger import get_logger
+from piano_spec import SLIDERS, KEY_MAP, OCTAVES, FIRST_OCTAVE, POLYPHONY, note_to_freq as spec_note_to_freq
 
 # Set up module logger
 logger = get_logger(__name__)
@@ -194,7 +195,7 @@ class PianoKeyboardWindow(QMainWindow):
         # Initialize attributes
         self.active_notes: Dict[str, Dict[str, Any]] = {}
         self.sustain_indefinite = False
-        self.polyphony_limit = 8
+        self.polyphony_limit = POLYPHONY
         self.samples: Dict[str, Any] = {}
         self.current_preset = "Default"
         self.current_sound_source = "Waveform"
@@ -255,7 +256,7 @@ class PianoKeyboardWindow(QMainWindow):
     def create_keyboard(self) -> None:
         """Create the piano keyboard layout."""
         try:
-            octaves = 3
+            octaves = OCTAVES
             white_notes = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
             black_notes = ['C#', 'D#', 'F#', 'G#', 'A#']
 
@@ -265,20 +266,20 @@ class PianoKeyboardWindow(QMainWindow):
             for octave in range(octaves):
                 octave_layout = QHBoxLayout()
                 for note in white_notes:
-                    key = PianoKey(f"{note}{octave+4}")
-                    key.pressed.connect(lambda n=f"{note}{octave+4}": self.notePressed.emit(n))
-                    key.released.connect(lambda n=f"{note}{octave+4}": self.noteReleased.emit(n))
+                    key = PianoKey(f"{note}{octave+FIRST_OCTAVE}")
+                    key.pressed.connect(lambda n=f"{note}{octave+FIRST_OCTAVE}": self.notePressed.emit(n))
+                    key.released.connect(lambda n=f"{note}{octave+FIRST_OCTAVE}": self.noteReleased.emit(n))
                     octave_layout.addWidget(key)
-                    self.keys[f"{note}{octave+4}"] = key
+                    self.keys[f"{note}{octave+FIRST_OCTAVE}"] = key
 
                 black_key_layout = QHBoxLayout()
                 black_key_layout.addSpacing(15)
                 for i, note in enumerate(black_notes):
-                    key = PianoKey(f"{note}{octave+4}", is_black=True)
-                    key.pressed.connect(lambda n=f"{note}{octave+4}": self.notePressed.emit(n))
-                    key.released.connect(lambda n=f"{note}{octave+4}": self.noteReleased.emit(n))
+                    key = PianoKey(f"{note}{octave+FIRST_OCTAVE}", is_black=True)
+                    key.pressed.connect(lambda n=f"{note}{octave+FIRST_OCTAVE}": self.notePressed.emit(n))
+                    key.released.connect(lambda n=f"{note}{octave+FIRST_OCTAVE}": self.noteReleased.emit(n))
                     black_key_layout.addWidget(key)
-                    self.keys[f"{note}{octave+4}"] = key
+                    self.keys[f"{note}{octave+FIRST_OCTAVE}"] = key
                     if i == 1:
                         black_key_layout.addSpacing(40)
                     else:
@@ -309,22 +310,14 @@ class PianoKeyboardWindow(QMainWindow):
             controls_layout = QHBoxLayout(controls_widget)
 
             # Create sliders with common format
-            sliders = [
-                ("Volume", 0, 100, 80, self.update_volume),
-                ("Harmonics", 0, 100, 0, self.update_harmonics),
-                ("Reverb", 0, 100, 20, self.update_reverb),
-                ("Delay", 0, 100, 0, self.update_delay),
-                ("Chorus", 0, 100, 0, self.update_chorus),
-                ("Distortion", 0, 100, 0, self.update_distortion),
-                ("LFO", 0, 10, 0, self.update_lfo),
-                ("Sustain", 0, 5000, 500, self.update_sustain),
-                ("Filter Cutoff", 20, 20000, 20000, self.update_filter),
-                ("Filter Q", 0, 100, 50, self.update_filter),
-                ("Attack", 1, 1000, 10, self.update_adsr),
-                ("Decay", 1, 1000, 100, self.update_adsr),
-                ("Sustain Level", 0, 100, 70, self.update_adsr),
-                ("Release", 1, 2000, 500, self.update_adsr),
-            ]
+            handlers = {
+                "Volume": self.update_volume, "Harmonics": self.update_harmonics, "Reverb": self.update_reverb,
+                "Delay": self.update_delay, "Chorus": self.update_chorus, "Distortion": self.update_distortion,
+                "LFO": self.update_lfo, "Sustain": self.update_sustain, "Filter Cutoff": self.update_filter,
+                "Filter Q": self.update_filter, "Attack": self.update_adsr, "Decay": self.update_adsr,
+                "Sustain Level": self.update_adsr, "Release": self.update_adsr,
+            }
+            sliders = [(label, lo, hi, default, handlers[label]) for label, lo, hi, default in SLIDERS]
 
             # Create all sliders
             for label, min_val, max_val, default_val, connect_func in sliders:
@@ -979,12 +972,7 @@ class PianoKeyboardWindow(QMainWindow):
             Frequency in Hz
         """
         try:
-            notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-            octave = int(note[-1])
-            semitone = notes.index(note[:-1])
-
-            # A4 = 440Hz, calculate relative to that
-            return 440 * (2 ** ((octave - 4) + (semitone - 9) / 12))
+            return spec_note_to_freq(note)
         except Exception as e:
             logger.error(f"Error converting note {note} to frequency: {str(e)}")
             logger.debug(traceback.format_exc())
@@ -1044,13 +1032,8 @@ class PianoKeyboardWindow(QMainWindow):
             event.accept()  # Accept the event even if there was an error
 
     # Keyboard mapping from computer keys to notes
-    key_map = {
-        Qt.Key_A: 'C4', Qt.Key_W: 'C#4', Qt.Key_S: 'D4', Qt.Key_E: 'D#4',
-        Qt.Key_D: 'E4', Qt.Key_F: 'F4', Qt.Key_T: 'F#4', Qt.Key_G: 'G4',
-        Qt.Key_Y: 'G#4', Qt.Key_H: 'A4', Qt.Key_U: 'A#4', Qt.Key_J: 'B4',
-        Qt.Key_K: 'C5', Qt.Key_O: 'C#5', Qt.Key_L: 'D5', Qt.Key_P: 'D#5',
-        Qt.Key_Semicolon: 'E5', Qt.Key_Colon: 'F5'
-    }
+    key_map = {(Qt.Key_Semicolon if k == ';' else Qt.Key_Colon if k == ':' else getattr(Qt, 'Key_' + k.upper())): n
+               for k, n in KEY_MAP.items()}
 
 
 # Test code to run the piano keyboard standalone

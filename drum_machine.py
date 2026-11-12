@@ -20,6 +20,7 @@ from logger import get_logger
 
 # Import utility for file dialogs
 from file_dialog_utils import FileDialogUtils
+from drum_engine import ROWS, COLS, SAMPLE_NAMES, BPM_MIN, BPM_MAX, BPM_DEFAULT, step_interval_ms
 
 # Set up module logger
 logger = get_logger(__name__)
@@ -76,8 +77,8 @@ class DrumMachineGUI(QtWidgets.QMainWindow):
         self.grid_layout = QtWidgets.QGridLayout()
         self.layout.addLayout(self.grid_layout)
         self.buttons: Dict[Tuple[int, int], QtWidgets.QPushButton] = {}
-        self.rows: int = 12  # Number of instruments
-        self.cols: int = 32  # 32 steps in each row
+        self.rows: int = ROWS  # Number of instruments
+        self.cols: int = COLS  # 32 steps in each row
         self.groups: int = 8  # 8 groups of 4 buttons
 
         # Colors
@@ -85,10 +86,7 @@ class DrumMachineGUI(QtWidgets.QMainWindow):
         self.pushed_color = QtGui.QColor(0, 255, 0)
 
         # Sample names
-        self.sample_names: List[str] = [
-            "Kick", "Snare", "Hi-Hat", "Clap", "Tom 1", "Tom 2",
-            "Crash", "Ride", "Perc 1", "Perc 2", "FX 1", "FX 2"
-        ]
+        self.sample_names: List[str] = list(SAMPLE_NAMES)
 
         try:
             # Set up the UI components
@@ -193,9 +191,9 @@ class DrumMachineGUI(QtWidgets.QMainWindow):
             # BPM control
             self.bpm_label = QtWidgets.QLabel("BPM:", self)
             self.bpm_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-            self.bpm_slider.setMinimum(60)
-            self.bpm_slider.setMaximum(180)
-            self.bpm_slider.setValue(120)
+            self.bpm_slider.setMinimum(BPM_MIN)
+            self.bpm_slider.setMaximum(BPM_MAX)
+            self.bpm_slider.setValue(BPM_DEFAULT)
             self.bpm_slider.setFixedWidth(150)  # Compact the slider
             self.bpm_slider.valueChanged.connect(self.update_bpm)
             self.bpm_display = QtWidgets.QLabel("120", self)
@@ -420,7 +418,7 @@ class DrumMachineGUI(QtWidgets.QMainWindow):
                 self.play_button.setText("Play")
                 logger.debug("Playback stopped")
             else:
-                self.timer.start(60000 // int(self.bpm_display.text()) // 4)  # 16th note timing
+                self.timer.start(step_interval_ms(int(self.bpm_display.text())))  # 16th note timing
                 self.play_button.setText("Stop")
                 logger.debug(f"Playback started at {self.bpm_display.text()} BPM")
             self.playing = not self.playing
@@ -439,7 +437,7 @@ class DrumMachineGUI(QtWidgets.QMainWindow):
             current_bpm = self.bpm_slider.value()
             self.bpm_display.setText(str(current_bpm))
             if self.playing:
-                self.timer.start(60000 // current_bpm // 4)
+                self.timer.start(step_interval_ms(current_bpm))
             logger.debug(f"BPM updated to {current_bpm}")
         except Exception as e:
             logger.error(f"Error updating BPM: {str(e)}")

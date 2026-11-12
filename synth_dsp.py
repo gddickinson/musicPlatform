@@ -3,6 +3,8 @@
 Contents:
 - Track, WaveTrack, NoiseTrack, FMSynthTrack, ContinuousNoteTrack: block generators (generate_audio(num_frames)).
 - Effect, ReverbEffect, DistortionEffect, EQEffect, VibratoEffect, TremoloEffect, ChorusEffect, LowPassFilter.
+- automation_step(value, rate, min, max): one 50 ms tick of the GUI's automated dials.
+- DIAL_RANGES, AUTOMATION_RATE_RANGE, NOTE_OCTAVES, NOTE_HARMONICS: GUI control ranges.
 - EFFECT_PARAMS: the effect classes with the parameter ranges the GUI sliders map 0-100 onto.
 
 Only numpy and scipy are needed, so the web app (web/app.py) and the tests import this module without PyQt5/PyAudio.
@@ -302,6 +304,24 @@ class LowPassFilter(Effect):
     def process(self, audio):
         out, self.zi = signal.lfilter(self.b, self.a, audio, zi=self.zi)
         return out
+
+
+def automation_step(value, rate, minimum, maximum):
+    """One tick (every 50 ms) of the sound generator's AutomatedDial: move by int(rate * 0.05) and wrap around."""
+    value_range = maximum - minimum
+    new_value = value + int(rate * 0.05)
+    if new_value > maximum:
+        new_value = minimum + (new_value - maximum - 1) % value_range
+    elif new_value < minimum:
+        new_value = maximum - (minimum - new_value - 1) % value_range
+    return new_value
+
+
+# Ranges of the GUI's automated dials (TrackControls) and of their automation-rate sliders.
+DIAL_RANGES = {"frequency": (20, 2000), "carrier_freq": (20, 2000), "mod_freq": (1, 1000), "mod_index": (0, 10)}
+AUTOMATION_RATE_RANGE = (-1000, 1000)
+NOTE_OCTAVES = (1, 8)  # continuous-note octave choices
+NOTE_HARMONICS = 5  # harmonic sliders per continuous note
 
 
 # Effects offered per track by the sound generator GUI, with the parameter ranges its 0-100 sliders map onto.

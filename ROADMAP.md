@@ -24,11 +24,14 @@ A feature-rich PyQt5 DAW with piano keyboard, drum machine, sample pad, sound ge
 ## Long-term Vision
 - [ ] Migrate from PyAudio to a more robust backend (e.g., `sounddevice` or PortAudio directly)
 - [ ] Add a timeline/arrangement view for multi-track composition
-- [ ] Support MIDI file import/export for interoperability with other DAWs
+- [ ] Support MIDI file import (export: MidiExporter; the web drum machine exports General MIDI) for interoperability with other DAWs
 - [ ] Add automation lanes for mixer parameters (volume, pan, effects)
 - [ ] Package as a standalone app using PyInstaller or cx_Freeze
 
 ## Technical Debt
+- [ ] Decide what `ReverbEffect` (synth_dsp.py) should compute: it sums the last second of samples with weights that grow with age (oldest weight 1), giving a gain of the order of 10,000x and 44,100 multiplies per sample (too slow for real time). Left out of the web version until decided.
+- [ ] Vibrato reads outside each 1024-frame block and is clamped at block edges (np.interp); a delay-line vibrato would need lookahead
+- [ ] Split the files still over 500 lines (piano_keyboard, enhanced_main_gui, audio_export, audio_routing, audio_system, drum_machine)
 - [x] Audit `main_gui.py` vs `enhanced_main_gui.py` — consolidate if `main_gui.py` is legacy
 - [ ] Standardize signal/slot naming conventions across all PyQt5 modules
 - [ ] Add type hints across all modules (especially `audio_routing.py` and `integration.py`)
