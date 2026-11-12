@@ -11,6 +11,11 @@ The browser port is web/static/synth_engine.js (checked against this module by t
 import numpy as np
 from scipy import signal
 
+
+def _snapshot(obj):
+    """Copy of an object's state (arrays copied) so a preview can be undone."""
+    return {k: (v.copy() if isinstance(v, (np.ndarray, list, dict)) else v) for k, v in obj.__dict__.items()}
+
 class Track:
     def __init__(self, sample_rate):
         self.sample_rate = sample_rate
@@ -37,6 +42,16 @@ class Track:
 
     def generate_audio(self, num_frames):
         raise NotImplementedError("Subclasses must implement generate_audio method")
+
+    def preview(self, num_frames):
+        """The next num_frames of audio, without advancing the track or its effects (for drawing a scope)."""
+        saved = [(o, _snapshot(o)) for o in [self] + list(self.effects)]
+        try:
+            return self.generate_audio(num_frames)
+        finally:
+            for o, state in saved:
+                o.__dict__.clear()
+                o.__dict__.update(state)
 
 class WaveTrack(Track):
     def __init__(self, sample_rate):
@@ -72,6 +87,7 @@ class NoiseTrack(Track):
     def __init__(self, sample_rate):
         super().__init__(sample_rate)
         self.noise_type = 'white'
+        self._zi = {'pink': np.zeros(1), 'brown': np.zeros(1)}  # filter state carried from block to block
 
     def set_noise_type(self, noise_type):
         if noise_type in ['white', 'pink', 'brown']:
@@ -91,11 +107,13 @@ class NoiseTrack(Track):
 
     def pink_noise(self, num_frames):
         white = np.random.normal(0, 1, num_frames)
-        return signal.lfilter([1.0], [1, -0.9], white)
+        out, self._zi['pink'] = signal.lfilter([1.0], [1, -0.9], white, zi=self._zi['pink'])
+        return out
 
     def brown_noise(self, num_frames):
         white = np.random.normal(0, 1, num_frames)
-        return signal.lfilter([1.0], [1, -0.98], white)
+        out, self._zi['brown'] = signal.lfilter([1.0], [1, -0.98], white, zi=self._zi['brown'])
+        return out
 
 class FMSynthTrack(Track):
     def __init__(self, sample_rate):
@@ -130,6 +148,7 @@ class ContinuousNoteTrack(Track):
         self.current_sample = 0
 
     def set_note(self, note, octave):
+        self.note, self.octave = note, octave
         notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
         self.frequency = 440 * (2 ** ((notes.index(note) - 9) / 12 + (octave - 4)))
 
@@ -137,7 +156,8 @@ class ContinuousNoteTrack(Track):
         self.harmonics = harmonics
 
     def generate_audio(self, num_frames):
-        t = np.arange(num_frames) / self.sample_rate
+        t = (np.arange(num_frames) + self.current_sample) / self.sample_rate
+        self.current_sample += num_frames
         audio = np.zeros(num_frames)
         for i, amplitude in enumerate(self.harmonics):
             audio += amplitude * np.sin(2 * np.pi * self.frequency * (i + 1) * t)
@@ -181,6 +201,8 @@ class DistortionEffect(Effect):
         self.amount = float(amount)
 
     def process(self, audio):
+        if self.amount == 0:  # the limit of tanh(a*x)/tanh(a) as a -> 0 is x
+            return np.array(audio, dtype=float)
         return np.tanh(audio * self.amount) / np.tanh(self.amount)
 
 class EQEffect(Effect):
@@ -193,11 +215,13 @@ class EQEffect(Effect):
     def update_filters(self):
         self.low_b, self.low_a = signal.butter(1, 500 / (44100 / 2), btype='lowpass')
         self.high_b, self.high_a = signal.butter(1, 2000 / (44100 / 2), btype='highpass')
+        self.low_zi, self.high_zi = np.zeros(1), np.zeros(1)
 
     def process(self, audio):
-        low = signal.lfilter(self.low_b, self.low_a, audio) * self.low_gain
-        high = signal.lfilter(self.high_b, self.high_a, audio) * self.high_gain
-        return low + high + audio * (1 - self.low_gain - self.high_gain)
+        # gain 1 leaves a band unchanged: add (gain - 1) times the band to the signal
+        low, self.low_zi = signal.lfilter(self.low_b, self.low_a, audio, zi=self.low_zi)
+        high, self.high_zi = signal.lfilter(self.high_b, self.high_a, audio, zi=self.high_zi)
+        return audio + (self.low_gain - 1) * low + (self.high_gain - 1) * high
 
 class VibratoEffect(Effect):
     def __init__(self, rate=5, depth=0.005):
@@ -245,7 +269,9 @@ class ChorusEffect(Effect):
             lfo = np.sin(2 * np.pi * self.rate * i / 44100 + self.phase)
             delay = int(self.depth * 44100 * (1 + lfo))
 
-            if delay < len(self.buffer):
+            if delay == 0:
+                output[i] = sample
+            elif delay < len(self.buffer):
                 output[i] = self.mix * self.buffer[-delay] + (1 - self.mix) * sample
             else:
                 output[i] = sample
@@ -257,14 +283,25 @@ class ChorusEffect(Effect):
 class LowPassFilter(Effect):
     def __init__(self, cutoff=1000):
         super().__init__("LowPass")
+        self.zi = np.zeros(1)
         self.cutoff = float(cutoff)
+
+    @property
+    def cutoff(self):
+        return self._cutoff
+
+    @cutoff.setter
+    def cutoff(self, value):
+        # setting the cutoff (as the GUI slider does) recomputes the filter; its state carries on
+        self._cutoff = float(value)
         self.update_filter()
 
     def update_filter(self):
         self.b, self.a = signal.butter(1, self.cutoff / (44100 / 2), btype='low', analog=False)
 
     def process(self, audio):
-        return signal.lfilter(self.b, self.a, audio)
+        out, self.zi = signal.lfilter(self.b, self.a, audio, zi=self.zi)
+        return out
 
 
 # Effects offered per track by the sound generator GUI, with the parameter ranges its 0-100 sliders map onto.

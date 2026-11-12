@@ -250,15 +250,21 @@ class EnhancedSoundGeneratorGUI(QMainWindow):
 
     def audio_callback(self, in_data, frame_count, time_info, status):
         output_buffer = np.zeros(frame_count)
-        for track in self.tracks:
-            output_buffer += track.generate_audio(frame_count)
+        for track in list(self.tracks):
+            track.last_output = track.generate_audio(frame_count)
+            output_buffer += track.last_output
         return (output_buffer.astype(np.float32), pyaudio.paContinue)
 
     def update_plot(self):
         self.plot_widget.clear()
         t = np.arange(self.frames_per_buffer) / self.sample_rate
         for track in self.tracks:
-            audio_data = track.generate_audio(self.frames_per_buffer)
+            # While playing, draw what the audio callback last played; otherwise a preview. Either way the scope
+            # never advances the track, which used to make the audio skip a buffer on every redraw.
+            audio_data = getattr(track, 'last_output', None) if self.stream is not None else None
+            if audio_data is None:
+                audio_data = track.preview(self.frames_per_buffer)
+            t = np.arange(len(audio_data)) / self.sample_rate
             self.plot_widget.plot(t, audio_data, pen=pg.mkPen(track.color))
 
 
@@ -400,6 +406,7 @@ class TrackControls(QGroupBox):
         effects_group = QGroupBox("Effects")
         effects_layout = QGridLayout()
         effects_group.setLayout(effects_layout)
+        self.effect_sliders = {}  # (effect name, param) -> (slider, min, max)
 
         effects = EFFECT_PARAMS
 
@@ -415,6 +422,7 @@ class TrackControls(QGroupBox):
                 slider.setValue(50)
                 slider.valueChanged.connect(lambda value, ec=effect_class, pn=param_name, mi=min_val, ma=max_val:
                                             self.update_effect_param(ec, pn, mi + (ma - mi) * value / 100))
+                self.effect_sliders[(effect_class.__name__, param_name)] = (slider, min_val, max_val)
                 effects_layout.addWidget(slider, i, j * 2 + 1)
                 effects_layout.addWidget(QLabel(param_name), i, j * 2 + 2)
 
@@ -425,6 +433,10 @@ class TrackControls(QGroupBox):
         effect = self.track.get_effect(effect_name)
         if enabled and effect is None:
             new_effect = effect_class()
+            # start from the values the sliders show, not the class defaults
+            for (name, param), (slider, lo, hi) in self.effect_sliders.items():
+                if name == effect_name:
+                    setattr(new_effect, param, float(lo + (hi - lo) * slider.value() / 100))
             self.track.add_effect(new_effect)
         elif not enabled and effect is not None:
             self.track.remove_effect(effect_name)
