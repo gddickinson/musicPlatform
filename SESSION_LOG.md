@@ -32,3 +32,8 @@
 - All 35 WAVs in samples/ and wav/ (unknown origin, no licence) replaced by original synthesised sounds with the same
   names (sound_library.py, scripts/make_sounds.py, tests/test_sounds.py); samples/sample0-11 = the web drum kit.
   THIRD_PARTY.md records this; the old files remain in git history.
+
+## 2026-11-12: git history rewrite (approved by George)
+- Purged from all history with git-filter-repo and force-pushed: the 35 replaced WAVs of unknown origin in samples/ and wav/ (old versions only; the current synthesised files are untouched).
+  The current tree is unchanged (identical HEAD tree before/after); commit hashes changed, so old clones must be
+  re-cloned or reset to origin. A pre-rewrite mirror backup was kept outside the repo.
