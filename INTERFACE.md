@@ -19,6 +19,8 @@
   (`generate_audio(n)`, `preview(n)`), effects (`ReverbEffect`, `DistortionEffect`, `EQEffect`, `VibratoEffect`,
   `TremoloEffect`, `ChorusEffect`, `LowPassFilter`), `EFFECT_PARAMS`, `DIAL_RANGES`, `automation_step()`.
   sound_generator.py and preset_manager.py import from it.
+- **reverb_dsp.py**: `ReverbEffect` (Freeverb-style: 8 damped combs + 4 allpasses, mix, peak guard `PEAK_FACTOR`=2),
+  processed in <=225-sample chunks so it runs in real time; re-exported by synth_dsp.py.
 - **drum_engine.py**: `ROWS`, `COLS`, `SAMPLE_NAMES`, BPM range, `step_interval_ms()`, `render_pattern()`,
   `pattern_to_midi_tracks()` (GM drums), `preset_data()` / `from_preset_data()` (DrumPreset format), `example_pattern()`.
   drum_machine.py imports its constants and timing.
@@ -59,6 +61,6 @@
 - **setup_script.py**: Environment setup/installation helper.
 - **run_music_platform.sh**: Shell launcher script.
 - **tests/**: pytest: test_smoke.py (imports, logger), test_synth_dsp.py, test_midi_export.py,
-  test_drum_and_presets.py, test_piano.py (regressions for fixed bugs), test_fixtures_current.py, test_web.py;
+  test_drum_and_presets.py, test_piano.py, test_reverb.py (regressions for fixed bugs), test_fixtures_current.py, test_web.py;
   conftest.py pins offscreen Qt / PyQt5. Node tests: web/static/*.test.mjs.
 - **_archive/**: Legacy files (old main_gui.py, old unit tests with space-named directory).

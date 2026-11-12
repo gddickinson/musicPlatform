@@ -1,7 +1,7 @@
 // Verify page: the Python reference values (/api/verify: synth_dsp.py, drum_engine.py, drum_kit.py, wav_export.py,
 // midi_export.py) recomputed by the browser engines, case by case.
 import { route, app, api, esc } from './core.js';
-import { makeTrack, automationStep } from './synth_engine.js';
+import { makeTrack, automationStep, ReverbEffect } from './synth_engine.js';
 import * as de from './drum_engine.js';
 import { buildKit } from './drum_kit.js';
 import { encodeWav } from './wav_writer.js';
@@ -20,7 +20,19 @@ function synthRows(fx) {
       for (const v of t.generate(fx.block)) worst = Math.max(worst, Math.abs(v - c.out[i++]));
     }
     return [c.name, `${i} samples`, `max |JS - Python| ${worst.toExponential(1)}`, worst < 1e-9];
-  });
+  }).concat((fx.reverb || []).map(rv => {
+    const x = new Float64Array(rv.n), eff = new ReverbEffect(rv.params);
+    x[0] = 1;
+    for (let i = 3000; i < 4000; i++) x[i] = 0.7 * (((i - 3000) * 330 / 44100) % 1 * 2 - 1);
+    let worst = 0;
+    for (let i = 0; i < rv.n; i += 1024) {
+      eff.process(x.slice(i, i + 1024)).forEach((v, k) => {
+        if ((i + k) % 7 === 0) worst = Math.max(worst, Math.abs(v - rv.every7[(i + k) / 7]));
+      });
+    }
+    return [`reverb room ${rv.params.room_size}, damping ${rv.params.damping}, mix ${rv.params.mix}`, `${rv.n} samples`,
+      `max |JS - Python| ${worst.toExponential(1)}`, worst < 1e-9];
+  }));
 }
 
 async function drumRows(fx) {

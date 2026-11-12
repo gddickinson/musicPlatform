@@ -121,7 +121,7 @@ The site is a working browser version of the instruments:
 
 - **Drum machine**: the 12 x 32 step sequencer with the desktop's step clock (`60000 // BPM // 4` ms), row volumes,
   playback, your own samples per row, DrumPreset files, and WAV / General MIDI export.
-- **Sound generator**: wave, noise, FM and held-note tracks, automated dials, the effects rack (distortion, EQ,
+- **Sound generator**: wave, noise, FM and held-note tracks, automated dials, the effects rack (Freeverb-style reverb, distortion, EQ,
   vibrato, tremolo, chorus, low-pass), a scope, SoundGeneratorPreset files and WAV export, running in an AudioWorklet
   in 1024-sample blocks.
 - **Piano keyboard**: three octaves with the desktop's key map, sliders, ranges and defaults (the pyo sound chain is
@@ -132,8 +132,7 @@ The drum and sound-generator logic is ported line for line from the Qt-free modu
 `synth_dsp.py`, `midi_export.py` and `wav_export.py`; node tests (`web/static/*.test.mjs`) check sample buffers to
 1e-9 and WAV/MIDI files byte for byte against `tests/fixtures/` (regenerate with `python scripts/make_fixtures.py`).
 The drum rows play a synthesised kit (`drum_kit.py`), because the WAV files in `samples/` and `wav/` have no stated
-source or licence. The sound generator's Reverb is not on the web (see ROADMAP / SESSION_LOG: its formula needs a
-decision). The sample pad, recording studio, mixer, routing, project manager and MIDI controller are desktop only.
+source or licence. The sample pad, recording studio, mixer, routing, project manager and MIDI controller are desktop only.
 
 ### Run the web app
 

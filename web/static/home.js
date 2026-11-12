@@ -3,7 +3,7 @@ import { route, api, app, list, esc } from './core.js';
 
 const DOORS = [
   ['#/drums', 'Drum machine', 'The 12 x 32 step sequencer: edit a beat, play it, download it as WAV or General MIDI, save desktop presets.'],
-  ['#/synth', 'Sound generator', 'Wave, noise, FM and held-note tracks with distortion, EQ, vibrato, tremolo, chorus and low-pass, automated dials and a scope.'],
+  ['#/synth', 'Sound generator', 'Wave, noise, FM and held-note tracks with reverb, distortion, EQ, vibrato, tremolo, chorus and low-pass, automated dials and a scope.'],
   ['#/piano', 'Piano keyboard', 'Three octaves you can play from the computer keyboard, with ADSR, filter, harmonics, effects and pitch bend.'],
   ['#/verify', 'Verify', 'Your browser recomputes the Python reference results: sample buffers, timing, WAV and MIDI bytes.'],
   ['#/about', 'About', 'What the desktop app is, what this site covers and leaves out, how to run both.'],

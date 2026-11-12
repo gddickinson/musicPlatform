@@ -29,7 +29,7 @@ A feature-rich PyQt5 DAW with piano keyboard, drum machine, sample pad, sound ge
 - [ ] Package as a standalone app using PyInstaller or cx_Freeze
 
 ## Technical Debt
-- [ ] Decide what `ReverbEffect` (synth_dsp.py) should compute: it sums the last second of samples with weights that grow with age (oldest weight 1), giving a gain of the order of 10,000x and 44,100 multiplies per sample (too slow for real time). Left out of the web version until decided.
+- [x] Replace `ReverbEffect`'s one-second weighted sum (gain ~17,000x, 44,100 multiplies per sample) with a vectorised Freeverb-style reverb (reverb_dsp.py; output peak < 2x the input peak)
 - [ ] Vibrato reads outside each 1024-frame block and is clamped at block edges (np.interp); a delay-line vibrato would need lookahead
 - [ ] Split the files still over 500 lines (piano_keyboard, enhanced_main_gui, audio_export, audio_routing, audio_system, drum_machine)
 - [x] Audit `main_gui.py` vs `enhanced_main_gui.py` — consolidate if `main_gui.py` is legacy

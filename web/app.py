@@ -30,10 +30,7 @@ from wav_export import encode_wav  # noqa: E402
 STATIC = Path(__file__).resolve().parent / "static"
 SUMMARY = ("A digital audio workstation built with Python and PyQt5: piano keyboard, drum machine, sample pad, "
            "sound generator, recording studio, mixer and project/preset management in one tabbed window.")
-WEB_OMITS = {
-    "ReverbEffect": "the desktop formula sums a whole second of samples per output sample with weights that grow "
-                    "with age (gain of the order of 10,000x and far too slow for real time); left out until fixed.",
-}
+WEB_OMITS = {}  # effect class name -> why it is not on the web (none at present)
 
 app = FastAPI(title="Music Production Platform")
 app.mount("/static", StaticFiles(directory=STATIC), name="static")

@@ -53,6 +53,8 @@ EFFECTS = {  # name -> (constructor args, list of (class name, kwargs) to chain)
     "tremolo": [("TremoloEffect", {"rate": 7.0, "depth": 0.6})],
     "chorus": [("ChorusEffect", {"rate": 1.3, "depth": 0.01, "mix": 0.5})],
     "lowpass": [("LowPassFilter", {"cutoff": 800.0})],
+    "reverb": [("ReverbEffect", {"room_size": 0.8, "damping": 0.3, "mix": 0.6})],
+    "reverb loud": [("ReverbEffect", {"room_size": 1.0, "damping": 0.0, "mix": 1.0})],
     "chain": [("TremoloEffect", {"rate": 3.0, "depth": 0.4}), ("LowPassFilter", {"cutoff": 2500.0}),
               ("DistortionEffect", {"amount": 0.9})],
 }
@@ -97,7 +99,17 @@ def synth_fixture():
                   for v, rate, lo, hi in [(440, 0, 20, 2000), (440, 300, 20, 2000), (1990, 1000, 20, 2000),
                                           (25, -1000, 20, 2000), (5, 19, 0, 10), (9, 40, 0, 10), (1, -60, 0, 10),
                                           (500, -999, 1, 1000)]]
-    return {"block": BLOCK, "blocks": NBLOCKS, "cases": cases, "automation": automation}
+    # long reverb runs (the comb + allpass delays exceed 1563 samples): an impulse, then a saw burst; every 7th sample
+    reverb = []
+    for params in [{"room_size": 0.8, "damping": 0.3, "mix": 0.6}, {"room_size": 1.0, "damping": 0.0, "mix": 1.0}]:
+        x = np.zeros(8 * 1024)
+        x[0] = 1.0
+        x[3000:4000] = 0.7 * ((np.arange(1000) * 330 / 44100) % 1 * 2 - 1)
+        eff = dsp.ReverbEffect(**params)
+        y = np.concatenate([eff(x[i:i + 1024]) for i in range(0, len(x), 1024)])
+        reverb.append({"params": params, "input": "impulse at 0, 0.7 * 330 Hz saw from 3000 to 4000", "n": len(y),
+                       "every7": r(y[::7]), "sumsq": float((y * y).sum())})
+    return {"block": BLOCK, "blocks": NBLOCKS, "cases": cases, "automation": automation, "reverb": reverb}
 
 
 def stats(a):

@@ -59,7 +59,7 @@ def test_info_comes_from_the_python_modules():
     j = client.get("/api/info").json()
     assert j["drums"]["names"] == drum_engine.SAMPLE_NAMES and j["drums"]["cols"] == 32
     assert [s[0] for s in j["piano"]["sliders"]] == [s[0] for s in piano_spec.SLIDERS]
-    assert {e["name"] for e in j["synth"]["effects"] if not e["web"]} == {"ReverbEffect"}
+    assert all(e["web"] for e in j["synth"]["effects"]) and len(j["synth"]["effects"]) == 7
 
 
 def test_drums_render_matches_the_fixture():

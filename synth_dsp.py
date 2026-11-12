@@ -13,6 +13,8 @@ The browser port is web/static/synth_engine.js (checked against this module by t
 import numpy as np
 from scipy import signal
 
+from reverb_dsp import ReverbEffect  # noqa: F401  (Freeverb-style; lives in its own module)
+
 
 def _snapshot(obj):
     """Copy of an object's state (arrays copied) so a preview can be undone."""
@@ -181,22 +183,6 @@ class Effect:
             return self.process(audio)
         return audio
 
-class ReverbEffect(Effect):
-    def __init__(self, room_size=0.5, damping=0.5):
-        super().__init__("Reverb")
-        self.room_size = float(room_size)
-        self.damping = float(damping)
-        self.buffer = np.zeros(44100)  # 1 second buffer at 44.1kHz
-
-    def process(self, audio):
-        output = np.zeros_like(audio)
-        for i, sample in enumerate(audio):
-            self.buffer = np.roll(self.buffer, -1)
-            self.buffer[-1] = sample
-            reverb = np.sum(self.buffer * self.room_size * np.exp(-np.arange(len(self.buffer)) * self.damping / 44100))
-            output[i] = sample + reverb
-        return output
-
 class DistortionEffect(Effect):
     def __init__(self, amount=0.5):
         super().__init__("Distortion")
@@ -326,7 +312,7 @@ NOTE_HARMONICS = 5  # harmonic sliders per continuous note
 
 # Effects offered per track by the sound generator GUI, with the parameter ranges its 0-100 sliders map onto.
 EFFECT_PARAMS = [
-    (ReverbEffect, {"room_size": (0, 1), "damping": (0, 1)}),
+    (ReverbEffect, {"room_size": (0, 1), "damping": (0, 1), "mix": (0, 1)}),
     (DistortionEffect, {"amount": (0, 1)}),
     (EQEffect, {"low_gain": (0, 2), "high_gain": (0, 2)}),
     (VibratoEffect, {"rate": (0, 20), "depth": (0, 1)}),

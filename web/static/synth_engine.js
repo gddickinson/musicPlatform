@@ -122,7 +122,47 @@ export class LowPassFilter {
   get cutoff() { return this._cutoff; }
   process(a) { return lfilter1(this.coef, a, this.st); }
 }
-export const EFFECTS = { DistortionEffect, EQEffect, VibratoEffect, TremoloEffect, ChorusEffect, LowPassFilter };
+// Freeverb-style reverb (reverb_dsp.py): 8 damped feedback combs (RMS-normalised) + 4 Schroeder allpasses, dry/wet
+// mix, and a peak guard keeping |out| < PEAK_FACTOR x the largest input peak so far. Sample by sample; same arithmetic.
+const COMB_DELAYS = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617], ALLPASS_DELAYS = [556, 441, 341, 225], AP_GAIN = 0.5;
+export class ReverbEffect {
+  constructor({ room_size = 0.5, damping = 0.5, mix = 0.3 } = {}) {
+    this.room_size = room_size; this.damping = damping; this.mix = mix; this.peak = 0;
+    this.combs = COMB_DELAYS.map(d => ({ buf: new Float64Array(d), pos: 0, z: 0 }));
+    this.aps = ALLPASS_DELAYS.map(d => ({ buf: new Float64Array(d), pos: 0 }));
+  }
+  process(a) {
+    const fb = 0.7 + 0.28 * clamp(this.room_size, 0, 1), damp = 0.4 * clamp(this.damping, 0, 1);
+    const scale = Math.sqrt(1 - fb * fb), b0 = 1 - damp, K = ReverbEffect.PEAK_FACTOR, out = new Float64Array(a.length);
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i];
+      let total = 0;
+      for (const c of this.combs) {
+        const o = c.buf[c.pos], filt = c.z + b0 * o;
+        c.z = damp * filt;
+        c.buf[c.pos] = x + fb * filt; c.pos = (c.pos + 1) % c.buf.length;
+        total = total + o * scale;
+      }
+      let y = total / Math.sqrt(8);
+      for (const ap of this.aps) {
+        const delayed = ap.buf[ap.pos], v = y + AP_GAIN * delayed;
+        ap.buf[ap.pos] = v; ap.pos = (ap.pos + 1) % ap.buf.length;
+        y = delayed - AP_GAIN * v;
+      }
+      let r = (1 - this.mix) * x + this.mix * y;
+      this.peak = Math.max(this.peak, Math.abs(x));
+      const knee = Math.max(this.peak, 1e-12);
+      if (Math.abs(r) > knee) {
+        const room = (K - 1) * knee;
+        r = Math.sign(r) * (knee + room * Math.tanh((Math.abs(r) - knee) / room));
+      }
+      out[i] = r;
+    }
+    return out;
+  }
+}
+ReverbEffect.PEAK_FACTOR = 2.0;
+export const EFFECTS = { ReverbEffect, DistortionEffect, EQEffect, VibratoEffect, TremoloEffect, ChorusEffect, LowPassFilter };
 
 // ---- tracks ------------------------------------------------------------------------------------------------------
 class Track {
