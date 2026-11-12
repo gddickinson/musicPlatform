@@ -51,8 +51,8 @@ route('drums', async () => {
       <div class="actions"><button class="alt" id="resetkit">Back to the built-in kit</button></div>
       <div class="actions"><button class="alt" id="savep">Save .preset</button>
         <label class="btn alt" for="loadp">Load .preset</label><input type="file" id="loadp" accept=".preset,.json" hidden></div>
-      <p class="small mute">Built-in sounds are synthesised (drum_kit.py): the repo's own WAV files carry no stated
-      licence, so the site does not publish them. Your files stay in your browser. Presets use the desktop
+      <p class="small mute">Built-in sounds are synthesised in your browser (drum_kit.py), the same as the desktop's
+      samples/ files. Your files stay in your browser. Presets use the desktop
       DrumPreset format (pattern, BPM, volumes) and load in either app.</p>
       <p id="msg" class="small"></p>
     </section>

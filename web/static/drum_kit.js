@@ -1,5 +1,5 @@
-// The synthesised 12-voice drum kit: a port of drum_kit.py (the repo's WAV files have no stated licence, so the site
-// plays this kit). Checked against tests/fixtures/drum_fixture.json (drum_engine.test.mjs).
+// The synthesised 12-voice drum kit: a port of drum_kit.py (the desktop's samples/sample0-11.wav are the same voices).
+// Checked against tests/fixtures/drum_fixture.json (drum_engine.test.mjs).
 const SR = 44100, PEAK = 0.9, TWO_PI = 2 * Math.PI;
 
 export function xorshiftNoise(seed, n) {

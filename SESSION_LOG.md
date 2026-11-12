@@ -23,3 +23,12 @@
 - Drum sounds on the web are synthesised (`drum_kit.py`): samples/ and wav/ have no stated source or licence.
 - Needs George: ReverbEffect formula (ROADMAP); whether the repo WAVs may be published (then the site could use them).
 - Tests: `pytest tests` 41 passed; node suites pass; screenshots.py --static and --base (port 8167) all ok, phone 0 px.
+
+## 2026-11-12 (follow-up, George's "fix any other problems")
+
+- ReverbEffect replaced by a Freeverb-style reverb (reverb_dsp.py: 8 damped combs, 4 allpasses, mix, peak guard:
+  output < 2x the input peak), vectorised in 225-sample chunks (1 s in a few ms); now on the web synth too (JS port
+  matches within 1e-9). tests/test_reverb.py.
+- All 35 WAVs in samples/ and wav/ (unknown origin, no licence) replaced by original synthesised sounds with the same
+  names (sound_library.py, scripts/make_sounds.py, tests/test_sounds.py); samples/sample0-11 = the web drum kit.
+  THIRD_PARTY.md records this; the old files remain in git history.

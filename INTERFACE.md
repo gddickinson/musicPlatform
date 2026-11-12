@@ -24,7 +24,9 @@
 - **drum_engine.py**: `ROWS`, `COLS`, `SAMPLE_NAMES`, BPM range, `step_interval_ms()`, `render_pattern()`,
   `pattern_to_midi_tracks()` (GM drums), `preset_data()` / `from_preset_data()` (DrumPreset format), `example_pattern()`.
   drum_machine.py imports its constants and timing.
-- **drum_kit.py**: `build_kit()`: 12 synthesised drum voices (the web's sounds; the repo WAVs have no stated licence).
+- **drum_kit.py**: `build_kit()`: 12 synthesised drum voices (samples/sample0-11.wav and the web's sounds).
+- **sound_library.py**: `SOUNDS`: path -> generator for every WAV in samples/ and wav/ (original sounds; written by
+  scripts/make_sounds.py, checked by tests/test_sounds.py; see THIRD_PARTY.md).
 - **midi_export.py**: `build_midi(tracks)` -> mido MidiFile (absolute-time events; used by `MidiExporter`).
 - **wav_export.py**: `normalize_buffer()` (used by `AudioExporter`), `encode_wav()`.
 - **piano_spec.py**: `SLIDERS`, `WAVEFORMS`, `KEY_MAP`, `note_to_freq()` (piano_keyboard.py imports them).
@@ -61,6 +63,6 @@
 - **setup_script.py**: Environment setup/installation helper.
 - **run_music_platform.sh**: Shell launcher script.
 - **tests/**: pytest: test_smoke.py (imports, logger), test_synth_dsp.py, test_midi_export.py,
-  test_drum_and_presets.py, test_piano.py, test_reverb.py (regressions for fixed bugs), test_fixtures_current.py, test_web.py;
+  test_drum_and_presets.py, test_piano.py, test_reverb.py, test_sounds.py (regressions for fixed bugs), test_fixtures_current.py, test_web.py;
   conftest.py pins offscreen Qt / PyQt5. Node tests: web/static/*.test.mjs.
 - **_archive/**: Legacy files (old main_gui.py, old unit tests with space-named directory).

@@ -23,9 +23,9 @@ route('about', async () => {
   </table></div>
   ${omitted.map(e => `<p class="callout small"><b>${esc(e.name)}</b> is left out: ${esc(e.omitted_because)}</p>`).join('')}
   <h2>Sounds</h2>
-  <p>The drum rows play a synthesised kit (drum_kit.py: swept sines, FM, seeded noise and simple filters). The repo's own
-  WAV files (samples/, wav/) carry no stated source or licence, so they are not published here; the desktop app still
-  loads them, and on this page you can load any file of your own into a row.</p>
+  <p>The drum rows play a synthesised kit (drum_kit.py: swept sines, FM, seeded noise and simple filters), the same
+  sounds as the desktop drum machine's samples/ files. Every WAV in the repo is an original synthesised sound (MIT,
+  see THIRD_PARTY.md). On this page you can also load any file of your own into a row.</p>
   <h2>Run it</h2>
   <h3>Desktop app</h3>
   <pre>pip install -r requirements.txt

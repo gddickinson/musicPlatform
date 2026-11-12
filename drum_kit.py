@@ -1,7 +1,7 @@
 """A synthesised 12-voice drum kit for the drum machine rows (used by the web app; no audio files needed).
 
-The repo's own WAV files (samples/, wav/) carry no stated source or licence, so the web site does not publish them;
-it plays this kit instead (and lets you load your own files). Every voice is built from simple, reproducible parts:
+These are the drum machine's samples/sample0-11.wav (written by scripts/make_sounds.py) and what the web drum machine
+plays. Every voice is built from simple, reproducible parts:
 swept or fixed sine oscillators (phase by running sum), FM as in synth_dsp.FMSynthTrack, a seeded xorshift32 noise
 source, one-pole filters, the brown-noise filter of synth_dsp.NoiseTrack and the TremoloEffect formula, then
 exponential decay and peak normalisation to 0.9.

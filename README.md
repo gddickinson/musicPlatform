@@ -34,7 +34,8 @@ A digital audio workstation (DAW) built with Python and PyQt5. The platform inte
 musicPlatform/
 ├── synth_dsp.py             # Qt-free sound generator DSP (tracks, effects)
 ├── drum_engine.py           # Qt-free drum timing, render, MIDI tracks, presets
-├── drum_kit.py              # Synthesised drum kit (web)
+├── drum_kit.py              # Synthesised drum kit (samples/ and the web)
+├── sound_library.py         # Original sounds for samples/ and wav/ (scripts/make_sounds.py)
 ├── midi_export.py / wav_export.py  # Qt-free MIDI and WAV writers
 ├── piano_spec.py            # Piano sliders, key map, note frequencies
 ├── web/                     # Web app (FastAPI) and browser front end
@@ -58,8 +59,8 @@ musicPlatform/
 ├── setup_script.py          # Dependency installer
 ├── run_music_platform.sh    # Shell launch script
 ├── presets/                  # Preset storage (drum, effect, mixer, piano, sample, sound, track)
-├── samples/                 # Audio sample files
-├── wav/                     # WAV file storage
+├── samples/                 # Drum machine samples (original, synthesised)
+├── wav/                     # More original synthesised drum/bass/effect sounds
 ├── projects/                # Saved project files
 ├── logs/                    # Application logs
 └── tests/                   # Test suite (pytest)
@@ -131,8 +132,8 @@ The site is a working browser version of the instruments:
 The drum and sound-generator logic is ported line for line from the Qt-free modules `drum_engine.py`,
 `synth_dsp.py`, `midi_export.py` and `wav_export.py`; node tests (`web/static/*.test.mjs`) check sample buffers to
 1e-9 and WAV/MIDI files byte for byte against `tests/fixtures/` (regenerate with `python scripts/make_fixtures.py`).
-The drum rows play a synthesised kit (`drum_kit.py`), because the WAV files in `samples/` and `wav/` have no stated
-source or licence. The sample pad, recording studio, mixer, routing, project manager and MIDI controller are desktop only.
+The drum rows play the synthesised kit of `drum_kit.py`, the same sounds as the desktop's `samples/` (all WAVs in
+`samples/` and `wav/` are original synthesised sounds, see THIRD_PARTY.md). The sample pad, recording studio, mixer, routing, project manager and MIDI controller are desktop only.
 
 ### Run the web app
 
