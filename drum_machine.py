@@ -158,21 +158,23 @@ class DrumMachineGUI(QtWidgets.QMainWindow):
                         self.buttons[(i, step)] = button
                         frame_layout.addWidget(button, i, j)
 
-                        # Volume Control
-                        volume_dial = QtWidgets.QDial()
-                        volume_dial.setRange(0, 100)
-                        volume_dial.setValue(100)  # Default volume is 100%
-                        volume_dial.setFixedSize(25, 25)  # Compact the dials
-                        volume_dial.valueChanged.connect(lambda value, row=i: self.update_volume(row, value))
-                        self.grid_layout.addWidget(volume_dial, i, self.cols + 1)
-
-                        # Effects Button
-                        effects_button = QtWidgets.QPushButton("FX")
-                        effects_button.setFixedSize(40, 30)  # Compact the button
-                        effects_button.clicked.connect(lambda _, row=i: self.show_effects_window(row))
-                        self.grid_layout.addWidget(effects_button, i, self.cols + 2)
-
                 self.grid_layout.addWidget(frame, 0, block // 4 + 1, self.rows, 1)  # Place in grid, span vertically
+
+            # One volume dial and FX button per row (these used to be created once per step: 32 stacked per row)
+            self.volume_dials: Dict[int, QtWidgets.QDial] = {}
+            for i in range(self.rows):
+                volume_dial = QtWidgets.QDial()
+                volume_dial.setRange(0, 100)
+                volume_dial.setValue(100)  # Default volume is 100%
+                volume_dial.setFixedSize(25, 25)  # Compact the dials
+                volume_dial.valueChanged.connect(lambda value, row=i: self.update_volume(row, value))
+                self.grid_layout.addWidget(volume_dial, i, self.cols // 4 + 1)
+                self.volume_dials[i] = volume_dial
+
+                effects_button = QtWidgets.QPushButton("FX")
+                effects_button.setFixedSize(40, 30)  # Compact the button
+                effects_button.clicked.connect(lambda _, row=i: self.show_effects_window(row))
+                self.grid_layout.addWidget(effects_button, i, self.cols // 4 + 2)
 
             logger.debug("Pattern grid set up successfully")
         except Exception as e:
@@ -294,7 +296,8 @@ class DrumMachineGUI(QtWidgets.QMainWindow):
         """
         logger.info("Loading drum samples")
         samples: Dict[int, Optional[pygame.mixer.Sound]] = {}
-        sample_folder = "samples"  # Make sure this folder exists and contains your sample files
+        # the repo's samples/ folder, wherever the app is started from
+        sample_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples")
 
         # Try to create the samples folder if it doesn't exist
         if not os.path.exists(sample_folder):

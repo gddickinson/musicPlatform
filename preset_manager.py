@@ -5,7 +5,15 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdi
                             QPushButton, QFileDialog, QListWidget, QListWidgetItem,
                             QDialog, QFormLayout, QDialogButtonBox, QMessageBox,
                             QComboBox, QInputDialog, QTabWidget, QGroupBox)
+from PyQt5.QtWidgets import QDial
 from PyQt5.QtCore import Qt, pyqtSignal
+
+from synth_dsp import (WaveTrack, NoiseTrack, FMSynthTrack, ReverbEffect, DistortionEffect,
+                       EFFECT_PARAMS)
+
+# effect name in a preset file -> class ("Reverb"/"Distortion" were written by older versions)
+EFFECT_CLASSES = {cls.__name__: cls for cls, _ in EFFECT_PARAMS}
+EFFECT_CLASSES.update({"Reverb": ReverbEffect, "Distortion": DistortionEffect})
 
 class Preset:
     """Base class for all presets"""
@@ -455,12 +463,9 @@ class DrumPreset(Preset):
             
         if "volumes" in self.data:
             for row, volume in self.data["volumes"].items():
-                # Find the volume dial for this row
-                for j in range(drum_machine.grid_layout.columnCount()):
-                    item = drum_machine.grid_layout.itemAtPosition(int(row), j)
-                    if item and isinstance(item.widget(), QDial):
-                        item.widget().setValue(int(volume * 100))
-                        break
+                dial = drum_machine.volume_dials.get(int(row))
+                if dial is not None:
+                    dial.setValue(int(round(volume * 100)))
                         
     @staticmethod
     def from_drum_machine(drum_machine, name):
@@ -474,12 +479,8 @@ class DrumPreset(Preset):
             
         # Save volumes
         volumes = {}
-        for row in range(drum_machine.rows):
-            for j in range(drum_machine.grid_layout.columnCount()):
-                item = drum_machine.grid_layout.itemAtPosition(row, j)
-                if item and isinstance(item.widget(), QDial):
-                    volumes[str(row)] = item.widget().value() / 100
-                    break
+        for row, dial in drum_machine.volume_dials.items():
+            volumes[str(row)] = dial.value() / 100
                     
         preset.data = {
             "pattern": pattern,
@@ -534,18 +535,14 @@ class SoundGeneratorPreset(Preset):
             # Add effects
             if "effects" in track_data:
                 for effect_data in track_data["effects"]:
-                    effect_name = effect_data.get("name")
-                    if effect_name == "Reverb":
-                        effect = ReverbEffect(
-                            room_size=effect_data.get("room_size", 0.5),
-                            damping=effect_data.get("damping", 0.5)
-                        )
-                        track.add_effect(effect)
-                    elif effect_name == "Distortion":
-                        effect = DistortionEffect(
-                            amount=effect_data.get("amount", 0.5)
-                        )
-                        track.add_effect(effect)
+                    effect_class = EFFECT_CLASSES.get(effect_data.get("name"))
+                    if effect_class is None:
+                        continue
+                    effect = effect_class()
+                    for key, value in effect_data.items():
+                        if key != "name":
+                            setattr(effect, key, float(value))
+                    track.add_effect(effect)
                         
     @staticmethod
     def from_sound_generator(sound_generator, name):
@@ -578,11 +575,10 @@ class SoundGeneratorPreset(Preset):
                     "name": effect.__class__.__name__
                 }
                 
-                if isinstance(effect, ReverbEffect):
-                    effect_data["room_size"] = effect.room_size
-                    effect_data["damping"] = effect.damping
-                elif isinstance(effect, DistortionEffect):
-                    effect_data["amount"] = effect.amount
+                for params_class, params in EFFECT_PARAMS:
+                    if isinstance(effect, params_class):
+                        for param in params:
+                            effect_data[param] = float(getattr(effect, param))
                     
                 effects_data.append(effect_data)
                 

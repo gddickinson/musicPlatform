@@ -230,7 +230,7 @@ class EnhancedSoundGeneratorGUI(QMainWindow):
 
         track.color = self.track_colors[self.current_color_index]
         self.current_color_index = (self.current_color_index + 1) % len(self.track_colors)
-
+        return track
 
     def toggle_audio(self):
         if self.stream is None:
