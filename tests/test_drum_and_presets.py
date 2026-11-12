@@ -70,3 +70,24 @@ def test_sound_generator_preset_round_trip():
     assert w2.get_effect('DistortionEffect').amount == pytest.approx(0.3)
     assert g.tracks[1].mod_index == 5
     g.close()
+
+
+def test_sound_generator_preset_with_a_held_note():
+    # a held-note track was saved without a type; loading then gave its settings to the previous track (or crashed)
+    import sound_generator
+    from preset_manager import SoundGeneratorPreset
+    from synth_dsp import ContinuousNoteTrack, WaveTrack
+    g = sound_generator.EnhancedSoundGeneratorGUI()
+    g.add_track('wave').set_amplitude(0.9)
+    g.toggle_continuous_note_track('G')
+    note = g.continuous_note_tracks['G']
+    note.set_amplitude(0.2)
+    note.set_note('G', 3)
+    note.set_harmonics([1, 0.5])
+    p = SoundGeneratorPreset.from_sound_generator(g, 'z')
+    p.apply_to_sound_generator(g)
+    assert [type(t) for t in g.tracks] == [WaveTrack, ContinuousNoteTrack]
+    assert g.tracks[0].amplitude == 0.9
+    n = g.tracks[1]
+    assert (n.note, n.octave, n.harmonics, n.amplitude) == ('G', 3, [1, 0.5], 0.2)
+    g.close()

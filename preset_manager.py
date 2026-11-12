@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdi
 from PyQt5.QtWidgets import QDial
 from PyQt5.QtCore import Qt, pyqtSignal
 
-from synth_dsp import (WaveTrack, NoiseTrack, FMSynthTrack, ReverbEffect, DistortionEffect,
+from synth_dsp import (WaveTrack, NoiseTrack, FMSynthTrack, ContinuousNoteTrack, ReverbEffect, DistortionEffect,
                        EFFECT_PARAMS)
 
 # effect name in a preset file -> class ("Reverb"/"Distortion" were written by older versions)
@@ -527,6 +527,15 @@ class SoundGeneratorPreset(Preset):
                     track.set_mod_frequency(track_data["mod_freq"])
                 if "mod_index" in track_data:
                     track.set_mod_index(track_data["mod_index"])
+            elif track_type == "note":
+                note = track_data.get("note", "C")
+                sound_generator.add_continuous_note_track(note)
+                track = sound_generator.continuous_note_tracks[note]
+                track.set_note(note, int(track_data.get("octave", 4)))
+                if "harmonics" in track_data:
+                    track.set_harmonics(list(track_data["harmonics"]))
+            else:
+                continue  # unknown track type: skip it rather than reuse the previous track
                     
             # Set track volume
             if "amplitude" in track_data:
@@ -567,6 +576,11 @@ class SoundGeneratorPreset(Preset):
                 track_data["carrier_freq"] = track.carrier_freq
                 track_data["mod_freq"] = track.mod_freq
                 track_data["mod_index"] = track.mod_index
+            elif isinstance(track, ContinuousNoteTrack):
+                track_data["type"] = "note"
+                track_data["note"] = track.note
+                track_data["octave"] = track.octave
+                track_data["harmonics"] = list(track.harmonics)
                 
             # Save effects
             effects_data = []
