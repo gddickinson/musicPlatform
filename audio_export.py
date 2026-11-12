@@ -521,78 +521,10 @@ class MidiExporter(QObject):
             - value: Control value (0-127)
         """
         try:
-            import mido
-            from mido import Message, MidiFile, MidiTrack, MetaMessage
+            from midi_export import build_midi
 
             self.exportStarted.emit()
-
-            # Create MIDI file
-            mid = MidiFile(type=1)
-
-            # Set tempo (default 120 BPM)
-            tempo_track = MidiTrack()
-            mid.tracks.append(tempo_track)
-
-            # Add tempo meta message (120 BPM = 500000 microseconds per quarter note)
-            tempo_track.append(MetaMessage('set_tempo', tempo=500000, time=0))
-
-            # Process each track
-            if tracks:
-                for track_data in tracks:
-                    # Create track
-                    track = MidiTrack()
-                    mid.tracks.append(track)
-
-                    # Add track name
-                    if 'name' in track_data:
-                        track.append(MetaMessage('track_name', name=track_data['name'], time=0))
-
-                    # Add notes
-                    if 'notes' in track_data and track_data['notes']:
-                        # Sort notes by start time
-                        sorted_notes = sorted(track_data['notes'], key=lambda x: x['start_time'])
-
-                        # Convert to delta times
-                        last_time = 0
-                        for note in sorted_notes:
-                            # Convert seconds to ticks (assuming 480 ticks per beat and 120 BPM)
-                            start_ticks = int(note['start_time'] * 480 * 2)  # 2 beats per second at 120 BPM
-                            duration_ticks = int((note['end_time'] - note['start_time']) * 480 * 2)
-
-                            # Calculate delta time
-                            delta_start = start_ticks - last_time
-
-                            # Add note on message
-                            track.append(Message('note_on', note=note['note'],
-                                                velocity=note['velocity'], time=delta_start))
-
-                            # Add note off message
-                            track.append(Message('note_off', note=note['note'],
-                                                velocity=0, time=duration_ticks))
-
-                            # Update last time
-                            last_time = start_ticks + duration_ticks
-
-                    # Add control changes
-                    if 'control_changes' in track_data and track_data['control_changes']:
-                        # Sort control changes by time
-                        sorted_cc = sorted(track_data['control_changes'], key=lambda x: x['time'])
-
-                        # Convert to delta times
-                        last_time = 0
-                        for cc in sorted_cc:
-                            # Convert seconds to ticks
-                            ticks = int(cc['time'] * 480 * 2)
-
-                            # Calculate delta time
-                            delta = ticks - last_time
-
-                            # Add control change message
-                            track.append(Message('control_change', control=cc['control'],
-                                                value=cc['value'], time=delta))
-
-                            # Update last time
-                            last_time = ticks
+            mid = build_midi(tracks)
 
             # Save the MIDI file
             mid.save(file_path)
